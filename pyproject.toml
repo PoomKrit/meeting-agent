@@ -1,0 +1,23 @@
+[project]
+name = "meeting-agent"
+version = "0.1.0"
+description = "Record Teams/WebEx meetings, transcribe with Whisper, take manual notes, summarize ticket action items with Claude"
+requires-python = ">=3.12,<3.14"
+dependencies = [
+    "openai-whisper",
+    "sounddevice",
+    "soundfile",
+    "numpy",
+    "silero-vad>=6.2.3",
+    "pyaec>=1.0.1",
+]
+
+[project.scripts]
+meeting-agent = "meeting_agent.cli:main"
+
+[dependency-groups]
+dev = ["pytest"]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
