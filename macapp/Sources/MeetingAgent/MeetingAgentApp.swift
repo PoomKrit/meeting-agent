@@ -9,7 +9,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         guard model.isProcessing else { return .terminateNow }
         let alert = NSAlert()
         alert.messageText = "กำลังทำงานอยู่ ออกเลยไหม?"
-        alert.informativeText = "ถ้าออกตอนนี้จะไม่มีสรุป เสียงที่อัดไปแล้วยังอยู่ในโฟลเดอร์ประชุม ใช้ `meeting-agent process <โฟลเดอร์>` ทำต่อภายหลังได้"
+        alert.informativeText = "ถ้าออกตอนนี้ ประชุมที่ยังอยู่ในคิวจะไม่ถูกถอดเสียงหรือสรุป เสียงที่อัดไปแล้วยังอยู่ในโฟลเดอร์ประชุม ใช้ `meeting-agent process <โฟลเดอร์>` ทำต่อภายหลังได้"
         alert.addButton(withTitle: "ยกเลิก")
         alert.addButton(withTitle: "ออก")
         guard alert.runModal() == .alertSecondButtonReturn else { return .terminateCancel }
@@ -49,9 +49,12 @@ struct MeetingAgentApp: App {
                 Button("✕ Cancel (ลบประชุมนี้)") { model.confirmCancel() }
             }
             Text(model.statusText)
+            if let queue = model.queueSummary {
+                Text(queue)
+            }
             Divider()
             Button("เปิดโฟลเดอร์ประชุม") { model.open(model.notesRoot) }
-            if let summary = model.lastSummary {
+            if let summary = model.latestSummary {
                 Button("เปิดสรุปล่าสุด") { model.open(summary) }
             }
             if let folder = model.lastFolder {

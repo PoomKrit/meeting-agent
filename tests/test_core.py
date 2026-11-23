@@ -8,7 +8,7 @@ import soundfile as sf
 from meeting_agent import clean
 from meeting_agent import audio
 from meeting_agent.audio import level_percent
-from meeting_agent.cli import RecordingClock, build_parser, mic_label, take_notes, title_of, write_atomic
+from meeting_agent.cli import RecordingClock, build_parser, mic_label, session_dir, take_notes, title_of, write_atomic
 from meeting_agent.export import export_m4a
 from meeting_agent.summarize import build_user_message
 from meeting_agent.transcribe import Progress, _bar_for, format_time, is_bleed, is_silent, merge_regions, merge_segments
@@ -314,3 +314,18 @@ def test_mic_only_flag_and_labels():
     assert parse(["devices", "--json"]).json is True
     assert mic_label({"Me": "mic.flac", "Others": "system.flac"}) == "Me"
     assert mic_label({"Me": "mic.flac"}) == "Mic"
+
+
+def test_two_meetings_with_the_same_title_get_separate_folders(tmp_path):
+    first = session_dir(tmp_path, "Daily")
+    second = session_dir(tmp_path, "Daily")
+    third = session_dir(tmp_path, "Daily")
+    assert len({first, second, third}) == 3
+    assert second.name.endswith("-2") and third.name.endswith("-3")
+    assert title_of(second) == "Daily 2"
+
+
+def test_record_can_skip_processing_for_the_app_queue():
+    parse = build_parser().parse_args
+    assert parse(["record", "x"]).no_process is False
+    assert parse(["record", "x", "--no-process"]).no_process is True

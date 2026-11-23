@@ -71,8 +71,11 @@ class Track:
         self.paused = False
         self.muted = False
         self._peak = 0.0
+        self.overflows = 0  # callbacks where the machine was too busy and audio was lost
 
     def _callback(self, indata, frames, time, status):
+        if status.input_overflow:
+            self.overflows += 1
         # Paused: drop frames. Every track skips the same stretch, so they stay aligned.
         if self.paused:
             return

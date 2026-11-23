@@ -8,6 +8,48 @@ struct NotesEditor: NSViewRepresentable {
     func updateNSView(_ view: NSScrollView, context: Context) {}
 }
 
+/// One meeting in the processing queue. Several can be listed while a new meeting is being recorded.
+struct JobRow: View {
+    @ObservedObject var model: AgentModel
+    let job: Job
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 3) {
+            HStack {
+                Text(job.title).lineLimit(1)
+                Spacer()
+                if job.isActive && job.state != .cancelling {
+                    Button("✕") { model.confirmCancelJob(job.id) }
+                        .buttonStyle(.link)
+                        .help("ยกเลิกการประมวลผลประชุมนี้")
+                }
+            }
+            Text(job.state.text).font(.caption).foregroundStyle(color)
+            if case .transcribing(let percent) = job.state {
+                ProgressView(value: percent).progressViewStyle(.linear)
+            } else if job.state == .preparing || job.state == .summarizing {
+                ProgressView().progressViewStyle(.linear)  // no measurable progress: animated bar
+            }
+            if case .done = job.state {
+                HStack {
+                    if let summary = job.summary { Button("เปิดสรุป") { model.open(summary) }.buttonStyle(.link) }
+                    Button("โฟลเดอร์") { model.open(job.folder) }.buttonStyle(.link)
+                }
+                .font(.caption)
+            }
+        }
+    }
+
+    private var color: Color {
+        switch job.state {
+        case .done: .green
+        case .failed: .orange
+        case .cancelled: .secondary
+        default: .primary
+        }
+    }
+}
+
 /// One input-level bar. Green normally, orange when loud, red near clipping.
 struct LevelBar: View {
     let label: String
@@ -107,12 +149,6 @@ struct ConsoleView: View {
                 }
             }
 
-            if model.phase == .transcribing || model.phase == .summarizing {
-                // nil value = animated indeterminate bar (summarizing has no measurable progress)
-                ProgressView(value: model.phase == .transcribing ? model.progress : nil)
-                    .progressViewStyle(.linear)
-            }
-
             if model.notepadOpen {
                 HStack(alignment: .firstTextBaseline) {
                     Text("Note").font(.headline)
@@ -126,12 +162,20 @@ struct ConsoleView: View {
             }
 
             if let folder = model.lastFolder {
+                Button("เปิดโฟลเดอร์ประชุมนี้") { model.open(folder) }
+            }
+
+            if !model.jobs.isEmpty {
+                Divider()
                 HStack {
-                    if let summary = model.lastSummary {
-                        Button("เปิดสรุป") { model.open(summary) }
+                    Text("คิวประมวลผล").font(.headline)
+                    Spacer()
+                    if model.jobs.contains(where: { !$0.isActive }) {
+                        Button("ล้างรายการที่จบแล้ว") { model.clearFinishedJobs() }.buttonStyle(.link)
                     }
-                    // meeting.m4a, transcript.txt, notes.md and images/ live here.
-                    Button("เปิดโฟลเดอร์ประชุมนี้") { model.open(folder) }
+                }
+                ForEach(model.jobs) { job in
+                    JobRow(model: model, job: job)
                 }
             }
 

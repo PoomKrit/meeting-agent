@@ -29,9 +29,15 @@ TRACKS = {"Me": "mic.flac", "Others": "system.flac"}
 
 def session_dir(out: Path, title: str) -> Path:
     slug = re.sub(r'[\s/\\:*?"<>|]+', "-", title.strip()).strip("-") or "meeting"
-    path = out / f"{datetime.now():%Y-%m-%d_%H%M}_{slug}"
-    path.mkdir(parents=True, exist_ok=False)
-    return path
+    base = out / f"{datetime.now():%Y-%m-%d_%H%M}_{slug}"
+    path, n = base, 2
+    while True:  # two meetings with the same title in the same minute must not share a folder
+        try:
+            path.mkdir(parents=True, exist_ok=False)
+            return path
+        except FileExistsError:
+            path = base.with_name(f"{base.name}-{n}")
+            n += 1
 
 
 def title_of(path: Path) -> str:
@@ -166,8 +172,12 @@ def cmd_record(args) -> None:
         for track in tracks:  # closes the FLAC files properly, whatever ended the run
             track.stop()
     emit(f"■ หยุดอัดแล้ว ({format_time(clock.elapsed())})")
+    if dropped := sum(t.overflows for t in tracks):
+        emit(f"⚠ เสียงขาดหาย {dropped} ครั้งระหว่างอัด (เครื่องทำงานหนักเกินไป) ช่วงนั้นเวลาใน transcript อาจเพี้ยนเล็กน้อย")
     if ended_by == "/cancel":
         emit("✗ ยกเลิกแล้ว — ไม่ถอดเสียงและไม่สรุป (ไฟล์เสียงที่อัดไว้ยังอยู่)")
+        return
+    if args.no_process:  # the Mac app queues `process` itself, so the next meeting can start at once
         return
     process(path, args.whisper_model, args.language, clean=not args.no_clean)
 
@@ -279,6 +289,7 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--system", default="BlackHole", help="ชื่อ (บางส่วน) ของ device ที่รับเสียงจาก Teams/WebEx")
     p.add_argument("--mic", default=None, help="ชื่อ (บางส่วน) ของไมค์ (default: system default input)")
     p.add_argument("--out", type=Path, default=DEFAULT_OUT)
+    p.add_argument("--no-process", action="store_true", help="อัดอย่างเดียว ไม่ถอดเสียง/สรุปต่อ (ใช้ `process <โฟลเดอร์>` ทีหลัง Mac app ใช้ตัวนี้เพื่อต่อคิว)")
     p.add_argument("--mic-only", action="store_true", help="อัดจากไมค์อย่างเดียว (ไมค์เครื่องหรือไมค์ภายนอก) ไม่ต้องมี BlackHole/ประชุมออนไลน์ ป้ายใน transcript เป็น Mic")
     p.add_argument("--levels", action="store_true", help="พิมพ์ระดับเสียง '[level] me others' ทุก 0.1 วินาที (ให้ Mac app วาดแถบ)")
     p.set_defaults(func=cmd_record)
