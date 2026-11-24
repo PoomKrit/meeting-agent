@@ -94,7 +94,7 @@ uv run meeting-agent process ~/meeting-notes/2026-11-12_1015_Sprint-planning
 | `notes.md` | note ที่พี่จดเอง (markdown, ไม่มี timestamp) จาก Mac app หรือ CLI ไม่ถูกส่งให้ LLM สร้างเมื่อจดอย่างน้อย 1 ตัวอักษรเท่านั้น |
 | `images/` | รูปที่วางใน Note (`paste-N.png`) ลิงก์จาก `notes.md` ด้วย `![](images/paste-N.png)` ลบรูปออกจาก note แล้วไฟล์จะถูกลบตาม |
 | `transcript.txt` | `[hh:mm:ss] Me/Others: ...` |
-| `summary.md` | บันทึกการประชุมแบบละเอียดจาก transcript เท่านั้น (ไม่มีในโหมด note อย่างเดียว): ภาพรวม, รายละเอียดตามลำดับเวลาพร้อม timestamp, รายตัวของแต่ละ ticket, การตัดสินใจพร้อมเหตุผล, action item ทั้งหมด, ความเสี่ยง/blocker, คำถามค้าง, ตัวเลข/ชื่อที่ถูกพูดถึง และส่วนที่ transcript ไม่ชัด ปรับรูปแบบที่ `src/meeting_agent/minutes_prompt.md` |
+| `summary.md` | สรุปสั้นจาก transcript เท่านั้น (ไม่มีในโหมด note อย่างเดียว): ภาพรวม 3-6 ข้อ, ticket + action items, การตัดสินใจ, คำถามค้าง ปรับรูปแบบหรือความยาวที่ `src/meeting_agent/minutes_prompt.md` |
 
 ## ตั้งค่า
 
